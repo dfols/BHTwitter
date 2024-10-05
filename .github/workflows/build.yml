@@ -1,4 +1,4 @@
-name: Build and Release BHTwitter debs ++
+name: Build and Release BHTwitter
 
 on:
   workflow_dispatch:
@@ -90,11 +90,29 @@ jobs:
           echo "BHTWITTER_VERSION=${BHTWITTER_VERSION}" >> "$GITHUB_ENV"
           echo "$BHTWITTER_VERSION"
 
-      - name: Build Package
+      - name: Build Packages
         run: |
           cd ${{ github.workspace }}/main
           sed -i '' "s/^TARGET.*$/TARGET := iphone:clang:${{ inputs.sdk_version }}:${{ inputs.target_version }}/" Makefile
-          ./build.sh
+
+          # Create directories for each deployment format
+          mkdir -p packages/rootfull packages/rootless packages/trollstore packages/sideloaded
+
+          # Build rootfull package
+          ./build.sh --rootfull
+          mv packages/*.deb packages/rootfull/
+
+          # Build rootless package
+          ./build.sh --rootless
+          mv packages/*.deb packages/rootless/
+
+          # Build trollstore package
+          ./build.sh --trollstore
+          mv packages/*.ipa packages/trollstore/
+
+          # Build sideloaded package
+          ./build.sh --sideloaded
+          mv packages/*.ipa packages/sideloaded/
         env:
           THEOS: ${{ github.workspace }}/theos
 
@@ -103,7 +121,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: BHTwitter_${{ env.BHTWITTER_VERSION }}
-          path: main/packages/*.deb
+          path: |
+            main/packages/rootfull/*.deb
+            main/packages/rootless/*.deb
+            main/packages/trollstore/*.ipa
+            main/packages/sideloaded/*.ipa
           if-no-files-found: error
 
       - name: Create Draft Release
@@ -114,5 +136,9 @@ jobs:
         with:
           tag_name: v${{ env.BHTWITTER_VERSION }}
           name: v${{ env.BHTWITTER_VERSION }} - BHTwitter
-          files: main/packages/*.deb
+          files: |
+            main/packages/rootfull/*.deb
+            main/packages/rootless/*.deb
+            main/packages/trollstore/*.ipa
+            main/packages/sideloaded/*.ipa
           draft: true
