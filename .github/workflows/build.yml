@@ -18,7 +18,7 @@ on:
         required: false
         type: string
       upload_artifact:
-        description: "Upload DEBs as artifact (Public)"
+        description: "Upload artifacts (Public)"
         default: false
         required: false
         type: boolean
@@ -90,29 +90,36 @@ jobs:
           echo "BHTWITTER_VERSION=${BHTWITTER_VERSION}" >> "$GITHUB_ENV"
           echo "$BHTWITTER_VERSION"
 
-      - name: Build Packages
+      - name: Build Rootfull Package
         run: |
           cd ${{ github.workspace }}/main
           sed -i '' "s/^TARGET.*$/TARGET := iphone:clang:${{ inputs.sdk_version }}:${{ inputs.target_version }}/" Makefile
-
-          # Create directories for each deployment format
-          mkdir -p packages/rootfull packages/rootless packages/trollstore packages/sideloaded
-
-          # Build rootfull package
           ./build.sh --rootfull
+          mkdir -p packages/rootfull
           mv packages/*.deb packages/rootfull/
+        env:
+          THEOS: ${{ github.workspace }}/theos
 
-          # Build rootless package
+      - name: Build Rootless Package
+        run: |
+          cd ${{ github.workspace }}/main
           ./build.sh --rootless
+          mkdir -p packages/rootless
           mv packages/*.deb packages/rootless/
+        env:
+          THEOS: ${{ github.workspace }}/theos
 
-          # Build trollstore package
-          ./build.sh --trollstore
-          mv packages/*.ipa packages/trollstore/
-
-          # Build sideloaded package
+      - name: Build Sideloaded Package
+        run: |
+          cd ${{ github.workspace }}/main
           ./build.sh --sideloaded
-          mv packages/*.ipa packages/sideloaded/
+        env:
+          THEOS: ${{ github.workspace }}/theos
+
+      - name: Build TrollStore Package
+        run: |
+          cd ${{ github.workspace }}/main
+          ./build.sh --trollstore
         env:
           THEOS: ${{ github.workspace }}/theos
 
@@ -124,8 +131,8 @@ jobs:
           path: |
             main/packages/rootfull/*.deb
             main/packages/rootless/*.deb
-            main/packages/trollstore/*.ipa
-            main/packages/sideloaded/*.ipa
+            main/packages/sideloaded/**
+            main/packages/trollstore/**
           if-no-files-found: error
 
       - name: Create Draft Release
@@ -139,6 +146,6 @@ jobs:
           files: |
             main/packages/rootfull/*.deb
             main/packages/rootless/*.deb
-            main/packages/trollstore/*.ipa
-            main/packages/sideloaded/*.ipa
+            main/packages/sideloaded/**
+            main/packages/trollstore/**
           draft: true
