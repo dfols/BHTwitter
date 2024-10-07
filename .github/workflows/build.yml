@@ -134,18 +134,3 @@ jobs:
             main/packages/sideloaded/**
             main/packages/trollstore/**
           if-no-files-found: error
-
-      - name: Create Draft Release
-        if: ${{ inputs.create_release }}
-        uses: softprops/action-gh-release@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ env.BHTWITTER_VERSION }}
-          name: v${{ env.BHTWITTER_VERSION }} - BHTwitter
-          files: |
-            main/packages/rootfull/*.deb
-            main/packages/rootless/*.deb
-            main/packages/sideloaded/**
-            main/packages/trollstore/**
-          draft: true
